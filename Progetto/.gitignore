@@ -1,0 +1,5 @@
+backend/node_modules/
+backend/build
+
+service-compiler/node_modules/
+service-compiler/build

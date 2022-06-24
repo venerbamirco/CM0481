@@ -1,0 +1,220 @@
+<!doctype html>
+<html lang="it">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-1BmE4kWBq78iYhFldvKuhfTAU6auU8tT94WrHftjDbrCEXSU1oBoqyl2QvZ6jIW3" crossorigin="anonymous">
+    <title>Progetto SPS</title>
+</head>
+<body style="font-family: Montserrat;">
+<div class="container">
+    <div class="card border border-primary mt-3 mx-auto" style="max-width: 600px;">
+        <div class="card-header bg-primary border border-primary text-white text-center">
+            <h4 class="fw-bold fst-italic">
+                Progetto SPS
+            </h4>
+        </div>
+        <div class="card-body">
+
+            <div class="card border border-primary">
+                <div class="card-header bg-primary border border-primary text-white text-center" data-bs-toggle="collapse" href="#collapseinput">
+                    Input
+                </div>
+                <div class="card-body collapse" id="collapseinput">
+                    <div class="mb-3" id="textdiv">
+                        <label for="inputcodice" class="form-label text-primary">Codice da compilare o eseguire</label>
+                        <textarea class="form-control border border-primary text-muted" id="inputcodice" rows="3"></textarea>
+                    </div>
+                    <div class="mb-3 d-none" id="filediv">
+                        <label for="inputfile" class="form-label text-primary">File da compilare o eseguire</label>
+                        <input type="file" class="form-control border border-primary text-muted" id="inputfile">
+                    </div>
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" role="switch" id="flexSwitchCheckDefault" onclick="toggleSwitch(this.checked)">
+                        <label class="form-check-label" for="flexSwitchCheckDefault" id="textswitch">Testo</label>
+                      </div>
+                    <div class="mb-3">
+                        <label for="inputflagcompilazione" class="form-label text-primary">Flag di compilazione</label>
+                        <input type="text" class="form-control border border-primary text-muted" id="inputflagcompilazione" placeholder="Inserisci i flag di compilazione">
+                    </div>
+                    <div class="mb-3">
+                        <label for="inputflagcompilazione" class="form-label text-primary">Argomenti</label>
+                        <input type="text" class="form-control border border-primary text-muted" id="inputargomenti" placeholder="Inserisci gli argomenti">
+                    </div>
+                    <div class="mb-3">
+                        <label for="inputcosafare" class="form-label text-primary">Operazione da fare</label>
+                        <select class="form-select border border-primary text-muted" id="inputcosafare">
+                            <option selected disabled>Seleziona cosa fare</option>
+                            <option value="1">Compilazione</option>
+                            <option value="2">Compilazione + esecuzione</option>
+                        </select>
+                    </div>
+                    <div class="d-grid gap-1">
+                        <button type="button" class="btn btn-primary" onclick="sendData(document.getElementById('inputcodice').value,document.getElementById('inputflagcompilazione').value,document.getElementById('inputcosafare').value,document.getElementById('inputfile').files[0],document.getElementById('inputargomenti').value)">Invia istruzioni al server</button>
+                    </div>
+                </div>
+            </div>
+            <div class="mt-3">
+                <p class="fw-bold">Stato richiesta:</p>
+                <p id="status">Non inviata</p>
+            </div>
+            <div class="progress mt-3">
+                <div class="progress-bar" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" id="progress"></div>
+            </div>
+            <div class="card border border-primary mt-3 d-none" id="outputcard">
+                <div class="card-header bg-primary border border-primary text-white text-center" data-bs-toggle="collapse" href="#collapseoutput">
+                    Output
+                </div>
+                <div class="card-body collapse" id="collapseoutput">
+                    <div class="mb-3">
+                        <label for="outputcompilazione" class="form-label text-primary">Output compilazione</label>
+                        <textarea class="form-control border border-primary text-muted" id="outputcompilazione" rows="3" disabled></textarea>
+                    </div>
+                    <div>
+                        <label for="outputesecuzione" class="form-label text-primary">Output esecuzione</label>
+                        <textarea class="form-control border border-primary text-muted" id="outputesecuzione" rows="3" disabled></textarea>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+        <div class="card-footer bg-primary border border-primary text-white text-center fst-italic">
+            Progetto sviluppato da:<br>
+            Francesco Bruno 875812<br>
+            Andrea Luppino 855492<br>
+            Hernest Serani 877028<br>
+            Mirco Venerba 872653
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.socket.io/4.4.1/socket.io.min.js" integrity="sha384-fKnu0iswBIqkjxrhQCTZ7qlLHOFEgNkRmK2vaO/LbTZSXdJfAu6ewRBdwHPhBo/H" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-ka7Sk0Gln4gmtz2MlQnikT1wXgYsOg+OMhuP+IlRH9sENBO0LRn5q+8nbTov4+1p" crossorigin="anonymous"></script>
+<script>
+    const socket = io(window.location.hostname + ":5000");
+    setDefault();
+    socket.on("connect", () => {
+        console.log(socket.id); 
+    });
+
+    socket.on("received", (message) => {
+        console.log("received");
+        var JSONMex = JSON.parse(message);
+        if(JSONMex.code == 108 && JSONMex.status == "info"){
+            let progress = document.getElementById('progress');
+            let status = document.getElementById('status');
+            progress.style.width = "25%";
+            progress.setAttribute("aria-valuenow","25");
+            status.innerHTML = 'Richiesta ricevuta';
+        }else{
+            //TODO: HANDLE ERROR THROUGH ERROR MESSAGES, ECC
+        }
+    });
+    socket.on("queued", (message) => {
+        console.log("queued");
+        var JSONMex = JSON.parse(message);
+        if(JSONMex.code == 101 && JSONMex.status == "info"){
+            let progress = document.getElementById('progress');
+            let status = document.getElementById('status');
+            progress.style.width = "50%";
+            progress.setAttribute("aria-valuenow","50");
+            status.innerHTML = 'Richiesta in coda';
+        }else{
+            //TODO: HANDLE ERROR THROUGH ERROR MESSAGES, ECC
+        }   
+        
+    });
+    socket.on("handled", (message) => {
+        console.log("Handled");
+        console.log(message);
+        var JSONMex = JSON.parse(message);
+        if(JSONMex.code == 104 && JSONMex.status == "success"){
+            let progress = document.getElementById('progress');
+            let status = document.getElementById('status');
+            progress.style.width = "75%";
+            progress.setAttribute("aria-valuenow","75");
+            status.innerHTML = 'Richiesta presa in carico dal server';
+        }else{
+            //TODO: HANDLE ERROR THROUGH ERROR MESSAGES, ECC
+        }
+    });
+    
+    socket.on("finished", (message) => {
+        var JSONMex = JSON.parse(message);
+        if(JSONMex.code == 103 && JSONMex.status == "success"){
+            let progress = document.getElementById('progress');
+            let status = document.getElementById('status');
+            progress.style.width = "100%";
+            progress.setAttribute("aria-valuenow","100");
+            status.innerHTML = 'Richiesta conclusa, risultato visibile';
+            let output = document.getElementById('outputcard');
+            output.classList.remove('d-none'); 
+            if(JSONMex.message.action == "COMPILE")
+                document.getElementById('outputcompilazione').innerHTML = JSONMex.message.output;
+            if(JSONMex.message.action == "EXECUTE")
+                document.getElementById('outputesecuzione').innerHTML = JSONMex.message.output;
+        }else{
+            //TODO: HANDLE ERROR THROUGH ERROR MESSAGES, ECC
+        }
+        
+    });
+
+
+    function sendData(text, flag, operation, file, args){  //TODO: FILE EXTENSION SHOULD BE CHECKED BEFORE PROCESSING
+        let encryptData = btoa(text);
+        let compilate = false;
+        if(Number(operation) == 1){
+            compilate = false;
+        }
+        if(Number(operation) == 2){
+            compilate = true;
+        }
+        flagArray = []
+        if(flag && flag != ""){
+            flagArray = flag.split(' ');
+        }
+        if(file && file != ""){
+            let reader = new FileReader();
+            reader.addEventListener("loadend", () => { let data = reader.result; });
+            reader.readAsText(file);
+            reader.onload = function() {
+                text = btoa(reader.result);
+                if(text && text != "")
+                    socket.emit("compilationRequest",text,args,flagArray,compilate);
+            };
+        }else{
+            if(encryptData && encryptData != "")
+                socket.emit("compilationRequest",encryptData,args,flagArray,compilate);
+        }        
+        document.getElementById('outputcompilazione').innerHTML = "";
+        document.getElementById('outputesecuzione').innerHTML = "";   
+    }
+
+    function toggleSwitch(value){
+        let text = document.getElementById('textswitch');
+        let textbox = document.getElementById('textdiv');
+        let filebox = document.getElementById('filediv')
+        switch(value){
+            case true:
+                text.innerHTML = 'File';
+                filebox.classList.remove('d-none');
+                textbox.classList.add('d-none');
+            break;
+            case false:
+                text.innerHTML = 'Testo';
+                textbox.classList.remove('d-none');
+                filebox.classList.add('d-none');
+            break;
+        }
+    }
+
+    function setDefault(){
+        document.getElementById('outputcompilazione').innerHTML = "";
+        document.getElementById('outputesecuzione').innerHTML = "";
+        document.getElementById("inputcodice").value = "";
+        document.getElementById("inputfile").value = "";
+        document.getElementById("flexSwitchCheckDefault").checked = false;
+    }
+</script>
+</body>
+</html>
